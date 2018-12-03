@@ -7,7 +7,10 @@
  */
 
 import React, {Component} from 'react';
-import {Platform, StyleSheet, Text, View} from 'react-native';
+import { AppRegistry, Platform, StyleSheet, Text, View} from 'react-native';
+
+//Custom imports
+import StalkUser from './components/service/StalkUser';
 
 const instructions = Platform.select({
   ios: 'Press Cmd+R to reload,\n' + 'Cmd+D or shake for dev menu',
@@ -16,8 +19,11 @@ const instructions = Platform.select({
     'Shake or press menu button for dev menu',
 });
 
-type Props = {};
-export default class App extends Component<Props> {
+const stalk = navigator.geolocation.getCurrentPosition((position) => {
+  console.log(position.coords);
+});
+
+export default class App extends Component {
   render() {
     return (
       <View style={styles.container}>
@@ -47,3 +53,5 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
 });
+
+AppRegistry.registerHeadlessTask('StalkUser', () => stalk);
