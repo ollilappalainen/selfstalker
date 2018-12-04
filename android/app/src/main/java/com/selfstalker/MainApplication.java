@@ -22,30 +22,30 @@ import java.util.Arrays;
 import java.util.List;
 
 /* Custom imports */
-import com.selfstalker.service.StalkUserService;
+// import com.selfstalker.service.StalkUserService;
 
 public class MainApplication extends Application implements ReactApplication {
 
-  private final LocationListener listener = new LocationListener() {
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
-    }
+  // private final LocationListener listener = new LocationListener() {
+  //   @Override
+  //   public void onStatusChanged(String provider, int status, Bundle extras) {
+  //   }
     
-    @Override
-    public void onProviderEnabled(String provider) {
-    }
+  //   @Override
+  //   public void onProviderEnabled(String provider) {
+  //   }
 
-    @Override
-    public void onProviderDisabled(String provider) {
-    }
+  //   @Override
+  //   public void onProviderDisabled(String provider) {
+  //   }
 
-    @Override
-    public void onLocationChanged(Location location) {
-      Intent myIntent = new Intent(getApplicationContext(), StalkUserService.class);
-      getApplicationContext().startService(myIntent);
-      HeadlessJsTaskService.acquireWakeLockNow(getApplicationContext());
-    }
-  };
+  //   @Override
+  //   public void onLocationChanged(Location location) {
+  //     Intent myIntent = new Intent(getApplicationContext(), StalkUserService.class);
+  //     getApplicationContext().startService(myIntent);
+  //     HeadlessJsTaskService.acquireWakeLockNow(getApplicationContext());
+  //   }
+  // };
 
   private final ReactNativeHost mReactNativeHost = new ReactNativeHost(this) {
     @Override
@@ -75,9 +75,9 @@ public class MainApplication extends Application implements ReactApplication {
   public void onCreate() {
     super.onCreate();
 
-    LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);     
-    // Start requesting for location
-    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 1, listener);
+    // LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);     
+    // // Start requesting for location
+    // locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 1, listener);
 
     SoLoader.init(this, /* native exopackage */ false);
   }

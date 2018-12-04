@@ -1,57 +1,84 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- * @flow
- */
-
-import React, {Component} from 'react';
-import { AppRegistry, Platform, StyleSheet, Text, View} from 'react-native';
+import React, { Component } from 'react';
+import { AppRegistry, Platform, StyleSheet, Text, View } from 'react-native';
 
 //Custom imports
-import StalkUser from './components/service/StalkUser';
-
-const instructions = Platform.select({
-  ios: 'Press Cmd+R to reload,\n' + 'Cmd+D or shake for dev menu',
-  android:
-    'Double tap R on your keyboard to reload,\n' +
-    'Shake or press menu button for dev menu',
-});
-
-const stalk = navigator.geolocation.getCurrentPosition((position) => {
-  console.log(position.coords);
-});
+// import StalkUser from './components/service/StalkUser';
 
 export default class App extends Component {
-  render() {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.welcome}>Welcome to React Native!</Text>
-        <Text style={styles.instructions}>To get started, edit App.js</Text>
-        <Text style={styles.instructions}>{instructions}</Text>
-      </View>
-    );
-  }
-}
+    constructor(props) {
+        super(props);
 
+        this.state = {
+            watchId: null,
+            position: null,
+        };
+    }
+
+    watchLocation = () => {
+        const watchId = navigator.geolocation.watchPosition(position => {
+            this.setState({ position });
+        }, error => console.log('Error in watching position: ', error),
+        {
+            timeout: 2000,
+            maximumAge: 0,
+            enableHighAccuracy: true,
+            distanceFilter: 0
+        });
+
+        this.setState({ watchId });
+    }
+
+    componentDidMount() {
+        console.log('Attempt to watch location');
+        this.watchLocation();
+    }
+
+    componentWillUnmount() {
+        navigator.geolocation.clearWatch(this.state.watchId);
+    }
+
+    render() {
+        let time, lat, lng, date, timeString;
+
+        if (this.state.position) {
+            time = this.state.position.timestamp;
+            lat = this.state.position.coords.latitude;
+            lng = this.state.position.coords.longitude;
+        } else {
+            time = new Date().getTime();
+            lat = '';
+            lng = '';
+        }
+
+        date = new Date(time);
+        timeString = date.toString();
+
+        return (
+            <View style={styles.container}>
+                <Text style={styles.instructions}>Time: {timeString}</Text>
+                <Text style={styles.instructions}>Lat: {lat}</Text>
+                <Text style={styles.instructions}>Lng: {lng}</Text>
+            </View>
+        );
+    }
+}
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5FCFF',
-  },
-  welcome: {
-    fontSize: 20,
-    textAlign: 'center',
-    margin: 10,
-  },
-  instructions: {
-    textAlign: 'center',
-    color: '#333333',
-    marginBottom: 5,
-  },
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#F5FCFF',
+    },
+    welcome: {
+        fontSize: 20,
+        textAlign: 'center',
+        margin: 10,
+    },
+    instructions: {
+        textAlign: 'center',
+        color: '#333333',
+        marginBottom: 5,
+    },
 });
 
-AppRegistry.registerHeadlessTask('StalkUser', () => stalk);
+// AppRegistry.registerHeadlessTask('StalkUser', () => stalk);
