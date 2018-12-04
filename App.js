@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { AppRegistry, Platform, StyleSheet, Text, View } from 'react-native';
 
 //Custom imports
-// import StalkUser from './components/service/StalkUser';
+import Map from './components/map/Map';
 
 export default class App extends Component {
     constructor(props) {
@@ -55,6 +55,7 @@ export default class App extends Component {
 
         return (
             <View style={styles.container}>
+                <Map />                
                 <Text style={styles.instructions}>Time: {timeString}</Text>
                 <Text style={styles.instructions}>Lat: {lat}</Text>
                 <Text style={styles.instructions}>Lng: {lng}</Text>
@@ -80,5 +81,3 @@ const styles = StyleSheet.create({
         marginBottom: 5,
     },
 });
-
-// AppRegistry.registerHeadlessTask('StalkUser', () => stalk);
