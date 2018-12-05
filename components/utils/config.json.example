@@ -1,3 +1,4 @@
 {
+    "instructions": "Copy this file, fill neccessary information and remove .example from filename",
     "mapboxToken": "Paste Mapbox Access Token"
 }
