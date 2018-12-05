@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { AppRegistry, Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import MapboxGL from '@mapbox/react-native-mapbox-gl';
 
 //Custom imports
@@ -84,7 +84,7 @@ export default class App extends Component {
 
         return (
             <View style={styles.container}>
-                <Map />     
+                <Map position={this.state.position} />     
                 <View style={styles.mapOverlayContainer}>
                     <Text style={styles.instructions}>Time: {timeString}</Text>
                     <Text style={styles.instructions}>Lat: {lat}</Text>
