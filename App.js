@@ -1,8 +1,11 @@
 import React, { Component } from 'react';
 import { AppRegistry, Platform, StyleSheet, Text, View } from 'react-native';
+import MapboxGL from '@mapbox/react-native-mapbox-gl';
 
 //Custom imports
 import Map from './components/map/Map';
+
+const IS_ANDROID = Platform.OS === 'android';
 
 export default class App extends Component {
     constructor(props) {
@@ -11,7 +14,9 @@ export default class App extends Component {
         this.state = {
             watchId: null,
             position: null,
-        };
+            isFetchingAndroidPermission: IS_ANDROID,
+            isAndroidPermissionGranted: false,
+        };        
     }
 
     watchLocation = () => {
@@ -37,6 +42,16 @@ export default class App extends Component {
         navigator.geolocation.clearWatch(this.state.watchId);
     }
 
+    async componentWillMount() {
+        if (IS_ANDROID) {
+            const isGranted = await MapboxGL.requestAndroidLocationPermissions();
+            this.setState({
+                isAndroidPermissionGranted: isGranted,
+                isFetchingAndroidPermission: false,
+            });
+        }        
+    }
+
     render() {
         let time, lat, lng, date, timeString;
 
@@ -53,12 +68,28 @@ export default class App extends Component {
         date = new Date(time);
         timeString = date.toString();
 
+        if (IS_ANDROID && !this.state.isAndroidPermissionGranted) {
+            if (this.state.isFetchingAndroidPermission) {
+                return null;
+            }
+
+            return (
+                <View>
+                    <Text>
+                        You need to accept location permissions in order to use this application.
+                    </Text>
+                </View>
+            );
+        }
+
         return (
             <View style={styles.container}>
-                <Map />                
-                <Text style={styles.instructions}>Time: {timeString}</Text>
-                <Text style={styles.instructions}>Lat: {lat}</Text>
-                <Text style={styles.instructions}>Lng: {lng}</Text>
+                <Map />     
+                <View style={styles.mapOverlayContainer}>
+                    <Text style={styles.instructions}>Time: {timeString}</Text>
+                    <Text style={styles.instructions}>Lat: {lat}</Text>
+                    <Text style={styles.instructions}>Lng: {lng}</Text>
+                </View>                           
             </View>
         );
     }
@@ -80,4 +111,11 @@ const styles = StyleSheet.create({
         color: '#333333',
         marginBottom: 5,
     },
+    mapOverlayContainer: {
+        position: 'absolute',
+        bottom: 100,
+        left: 0,
+        right: 0,
+        backgroundColor: '#fff',
+    }
 });
