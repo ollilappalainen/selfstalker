@@ -13,9 +13,6 @@ import com.facebook.soloader.SoLoader;
 /* MapBox imports */
 import com.mapbox.rctmgl.RCTMGLPackage;
 
-/* React Native SQLite imports */
-import org.pgsqlite.SQLitePluginPackage;
-
 /* Java imports */
 import java.util.Arrays;
 import java.util.List;

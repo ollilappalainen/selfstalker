@@ -1,4 +1,12 @@
 {
     "instructions": "Copy this file, fill neccessary information and remove .example from filename",
-    "mapboxToken": "Paste Mapbox Access Token"
+    "mapboxToken": "Paste Mapbox Access Token",
+    "databaseConfig": {
+        "apiKey": "Firebase apikey",
+        "authDomain": "Firebase authdomain",
+        "databaseUrl": "Url to your Firebase database",
+        "projectId": "Project id in your Firebase database"
+        "storageBucket": "Firebase storage bucket url",
+        "messagingSenderId": "Firebase messagingSenderId"
+    }       
 }

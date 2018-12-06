@@ -1,12 +1,18 @@
 import React, { Component } from 'react';
 import { Platform, StyleSheet, Text, View, TouchableNativeFeedback, AsyncStorage } from 'react-native';
 import MapboxGL from '@mapbox/react-native-mapbox-gl';
+import firebase from 'firebase';
 
 //Custom imports
 import Map from './components/map/Map';
 import GeoJSON from './components/geoJSON/GeoJSON';
+import { databaseConfig } from './components/utils/config';
 
 const IS_ANDROID = Platform.OS === 'android';
+
+if (!firebase.apps.length) {
+    firebase.initializeApp(databaseConfig);
+}
 
 export default class App extends Component {
     constructor(props) {
@@ -74,6 +80,7 @@ export default class App extends Component {
     async componentWillMount() {
         if (IS_ANDROID) {
             const isGranted = await MapboxGL.requestAndroidLocationPermissions();
+
             this.setState({
                 isAndroidPermissionGranted: isGranted,
                 isFetchingAndroidPermission: false,
@@ -81,32 +88,21 @@ export default class App extends Component {
         }        
     }
 
-    fetchAllRoutes = async () => {
-        try {
-            await AsyncStorage.getAllKeys(keys => {
-                if (keys) {
-                    // const routesCount = keys.length;
-                    // this.setState({ routes, routesCount });                
-                    console.log('keyz ', keys);
-                }                                
+    fetchAllRoutes = async () => {        
+        firebase.database().ref('Routes/').once('value', routes => {
+            this.setState({
+                routes: routes.val(),
+                routesCount: parseInt(routes.numChildren()),
             });
-        } catch (error) {
-            console.log('Error fetching all routes: ', error);
-        }
+        });
     }
 
     storeRouteData = async () => {
         let { routesCount } = this.state;
-        const newKey = `@SelfStalkerStorage:SavedRoute${routesCount++}`;
-        const route = this.GeoJSON.line(this.state.routeCoords, newKey);
+        const name = `SavedRoute${routesCount++}`;
+        const route = this.GeoJSON.line(this.state.routeCoords, name);
 
-        console.log(newKey);
-
-        try {            
-            await AsyncStorage.setItem(newKey, route);
-        } catch (error) {
-            console.log('Error in saving route: ', error);
-        }
+        await firebase.database().ref(`Routes/${name}`).set({ name, route });
 
         this.fetchAllRoutes();
     }
@@ -122,8 +118,6 @@ export default class App extends Component {
                 isRecording: isRecording,
                 routeCoords: []         
             }); 
-            
-            console.log('routesCount: ', this.state.routesCount);
         } else {
             isRecording = true;
             await this.setState({ isRecording });
