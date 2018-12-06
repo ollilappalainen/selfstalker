@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import { Platform, StyleSheet, Text, View, TouchableNativeFeedback, AsyncStorage } from 'react-native';
 import MapboxGL from '@mapbox/react-native-mapbox-gl';
-import SQLite from 'react-native-sqlite-storage';
 
 //Custom imports
 import Map from './components/map/Map';
