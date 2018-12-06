@@ -1,10 +1,11 @@
 import React, { Component } from 'react';
-import { Platform, StyleSheet, Text, View, TouchableNativeFeedback, AsyncStorage } from 'react-native';
-import MapboxGL from '@mapbox/react-native-mapbox-gl';
+import { Platform, StyleSheet, Text, View, TouchableNativeFeedback } from 'react-native';
+import Mapbox from '@mapbox/react-native-mapbox-gl';
 import firebase from 'firebase';
 
 //Custom imports
 import Map from './components/map/Map';
+import RoutesMenu from './components/routes-menu/RoutesMenu';
 import GeoJSON from './components/geoJSON/GeoJSON';
 import { databaseConfig } from './components/utils/config';
 
@@ -27,6 +28,7 @@ export default class App extends Component {
             isRecording: false,
             routes: null,
             routesCount: 0,
+            selectedRoute: null,
         };          
 
         this.GeoJSON = new GeoJSON();
@@ -73,21 +75,6 @@ export default class App extends Component {
         });
     }
 
-    componentDidMount() {
-        this.getPosition();        
-    }
-
-    async componentWillMount() {
-        if (IS_ANDROID) {
-            const isGranted = await MapboxGL.requestAndroidLocationPermissions();
-
-            this.setState({
-                isAndroidPermissionGranted: isGranted,
-                isFetchingAndroidPermission: false,
-            });
-        }        
-    }
-
     fetchAllRoutes = async () => {        
         firebase.database().ref('Routes/').once('value', routes => {
             this.setState({
@@ -123,6 +110,25 @@ export default class App extends Component {
             await this.setState({ isRecording });
             this.watchLocation();
         }
+    }
+
+    handleRouteSelect = () => {
+        this.setState({ selectedRoute });
+    }
+    
+    componentDidMount() {
+        this.getPosition();        
+    }
+
+    async componentWillMount() {
+        if (IS_ANDROID) {
+            const isGranted = await Mapbox.requestAndroidLocationPermissions();
+
+            this.setState({
+                isAndroidPermissionGranted: isGranted,
+                isFetchingAndroidPermission: false,
+            });
+        }        
     }
 
     renderRecordButton() {
@@ -168,6 +174,7 @@ export default class App extends Component {
                 <View style={styles.buttonWrapper}>
                     {this.renderRecordButton()}
                 </View>                           
+                <RoutesMenu routes={this.state.routes} onRouteSelect={this.handleRouteSelect} />
             </View>
         );
     }
