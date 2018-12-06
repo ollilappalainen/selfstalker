@@ -10,7 +10,7 @@ Mapbox.setAccessToken(mapboxToken);
 
 const LATITUDE = 60.192059;
 const LONGITUDE = 24.945831;
-const ZOOM  = 11;
+const ZOOM  = 15;
 
 export default class Map extends Component {
     constructor() {
@@ -18,16 +18,15 @@ export default class Map extends Component {
 
         this.state = {
             coords: [LONGITUDE, LATITUDE],
-            zoom: ZOOM,            
+            zoom: ZOOM,  
+            centeredToPosition: false,          
         };
         
         this.GeoJSON = new GeoJSON();
     }
 
-    updateCoords = async () => {
-        const { coords } = this.props;
-
-        await this.setState({ coords });
+    centerMapToPosition = async () => {
+        // Todo
     }
 
     renderLine() {
@@ -69,7 +68,8 @@ export default class Map extends Component {
                     zoomLevel={this.state.zoom}
                     centerCoordinate={this.state.coords}
                     style={styles.container}
-                    showUserLocation={true}>
+                    showUserLocation={true}
+                    userTrackingMode={Mapbox.UserTrackingModes.Follow}>
                     {this.renderAnnotations()}
                     {this.renderLine()}
                 </Mapbox.MapView>

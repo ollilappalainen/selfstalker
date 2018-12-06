@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
-import { Platform, StyleSheet, Text, View, TouchableNativeFeedback } from 'react-native';
+import { Platform, StyleSheet, Text, View, TouchableNativeFeedback, AsyncStorage } from 'react-native';
 import MapboxGL from '@mapbox/react-native-mapbox-gl';
+import SQLite from 'react-native-sqlite-storage';
 
 //Custom imports
 import Map from './components/map/Map';
@@ -19,6 +20,8 @@ export default class App extends Component {
             isAndroidPermissionGranted: false,
             routeCoords: [],
             isRecording: false,
+            routes: null,
+            routesCount: 0,
         };          
 
         this.GeoJSON = new GeoJSON();
@@ -55,7 +58,8 @@ export default class App extends Component {
 
     getPosition = () => {
         navigator.geolocation.getCurrentPosition(position => {
-            this.setState({ position });
+            const coords = [ position.coords.longitude, position.coords.latitude ];
+            this.setState({ coords });
         }, error => console.log('Error getting device position: ', error),
         {
             timeout: 2000,
@@ -68,10 +72,6 @@ export default class App extends Component {
         this.getPosition();        
     }
 
-    // componentWillUnmount() {
-    //     navigator.geolocation.clearWatch(this.state.watchId);
-    // }
-
     async componentWillMount() {
         if (IS_ANDROID) {
             const isGranted = await MapboxGL.requestAndroidLocationPermissions();
@@ -82,13 +82,49 @@ export default class App extends Component {
         }        
     }
 
+    fetchAllRoutes = async () => {
+        try {
+            await AsyncStorage.getAllKeys(keys => {
+                if (keys) {
+                    // const routesCount = keys.length;
+                    // this.setState({ routes, routesCount });                
+                    console.log('keyz ', keys);
+                }                                
+            });
+        } catch (error) {
+            console.log('Error fetching all routes: ', error);
+        }
+    }
+
+    storeRouteData = async () => {
+        let { routesCount } = this.state;
+        const newKey = `@SelfStalkerStorage:SavedRoute${routesCount++}`;
+        const route = this.GeoJSON.line(this.state.routeCoords, newKey);
+
+        console.log(newKey);
+
+        try {            
+            await AsyncStorage.setItem(newKey, route);
+        } catch (error) {
+            console.log('Error in saving route: ', error);
+        }
+
+        this.fetchAllRoutes();
+    }
+
     onRecordButtonPress = async () => {
         let isRecording;
 
         if (this.state.isRecording) {
-            isRecording = false;
-            await this.setState({ isRecording });
+            isRecording = false;            
             navigator.geolocation.clearWatch(this.state.watchId);
+            this.storeRouteData();
+            await this.setState({ 
+                isRecording: isRecording,
+                routeCoords: []         
+            }); 
+            
+            console.log('routesCount: ', this.state.routesCount);
         } else {
             isRecording = true;
             await this.setState({ isRecording });
@@ -111,20 +147,11 @@ export default class App extends Component {
         )
     }
 
+    renderCenterToPositionButton() {
+
+    }
+
     render() {
-        let time, lat, lng, date, timeString;
-
-        if (this.state.coords) {
-            lat = this.state.coords[1];
-            lng = this.state.coords[0];
-        } else {
-            lat = '';
-            lng = '';
-        }
-
-        date = new Date(time);
-        timeString = date.toString();
-
         if (IS_ANDROID && !this.state.isAndroidPermissionGranted) {
             if (this.state.isFetchingAndroidPermission) {
                 return null;
@@ -141,11 +168,10 @@ export default class App extends Component {
 
         return (
             <View style={styles.container}>
-                <Map position={this.state.coords} routeCoords={this.state.routeCoords} />     
-                <View style={styles.mapOverlayContainer}>
-                    <Text style={styles.instructions}>Lat: {lat}</Text>
-                    <Text style={styles.instructions}>Lng: {lng}</Text>
-                </View>
+                <Map routeCoords={this.state.routeCoords} />  
+                <View>
+
+                </View>                   
                 <View style={styles.buttonWrapper}>
                     {this.renderRecordButton()}
                 </View>                           
@@ -159,23 +185,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#F5FCFF',
-    },
-    welcome: {
-        fontSize: 20,
-        textAlign: 'center',
-        margin: 10,
-    },
-    instructions: {
-        textAlign: 'center',
-        color: '#333333',
-        marginBottom: 5,
-    },
-    mapOverlayContainer: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: '#fff',
     },
     buttonWrapper: {
         display: 'flex',

@@ -13,6 +13,9 @@ import com.facebook.soloader.SoLoader;
 /* MapBox imports */
 import com.mapbox.rctmgl.RCTMGLPackage;
 
+/* React Native SQLite imports */
+import org.pgsqlite.SQLitePluginPackage;
+
 /* Java imports */
 import java.util.Arrays;
 import java.util.List;
@@ -31,8 +34,9 @@ public class MainApplication extends Application implements ReactApplication {
     @Override
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
-          new MainReactPackage(),
-          new RCTMGLPackage()
+        new SQLitePluginPackage(),
+        new MainReactPackage(),
+        new RCTMGLPackage()
       );
     }
 
