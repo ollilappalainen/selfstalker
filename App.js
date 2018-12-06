@@ -4,6 +4,7 @@ import MapboxGL from '@mapbox/react-native-mapbox-gl';
 
 //Custom imports
 import Map from './components/map/Map';
+import GeoJSON from './components/geoJSON/GeoJSON';
 
 const IS_ANDROID = Platform.OS === 'android';
 
@@ -13,28 +14,57 @@ export default class App extends Component {
 
         this.state = {
             watchId: null,
-            position: null,
+            coords: null,
             isFetchingAndroidPermission: IS_ANDROID,
             isAndroidPermissionGranted: false,
-        };        
+            routeCoords: [],
+        };          
+
+        this.GeoJSON = new GeoJSON();
+    }
+
+    updaterouteCoords = async (coords) => {
+        let array = this.state.routeCoords;
+        const lastIndex = array.length - 1;
+
+        if (array.length > 0) {
+            if (array[lastIndex] !== coords) array.push(coords);
+        } else {
+            array.push(coords);
+        }
+
+        await this.setState({ routeCoords: array });
     }
 
     watchLocation = () => {
         const watchId = navigator.geolocation.watchPosition(position => {
-            this.setState({ position });
+            const coords = [position.coords.longitude, position.coords.latitude];
+            this.setState({ coords });
+            this.updaterouteCoords(coords);
         }, error => console.log('Error in watching position: ', error),
         {
             timeout: 2000,
             maximumAge: 0,
             enableHighAccuracy: true,
-            distanceFilter: 0
+            distanceFilter: 2
         });
 
         this.setState({ watchId });
     }
 
+    getPosition = () => {
+        navigator.geolocation.getCurrentPosition(position => {
+            this.setState({ position });
+        }, error => console.log('Error getting device position: ', error),
+        {
+            timeout: 2000,
+            maximumAge: 2000,
+            enableHighAccuracy: true,
+        });
+    }
+
     componentDidMount() {
-        console.log('Attempt to watch location');
+        this.getPosition();
         this.watchLocation();
     }
 
@@ -55,12 +85,10 @@ export default class App extends Component {
     render() {
         let time, lat, lng, date, timeString;
 
-        if (this.state.position) {
-            time = this.state.position.timestamp;
-            lat = this.state.position.coords.latitude;
-            lng = this.state.position.coords.longitude;
+        if (this.state.coords) {
+            lat = this.state.coords[1];
+            lng = this.state.coords[0];
         } else {
-            time = new Date().getTime();
             lat = '';
             lng = '';
         }
@@ -84,9 +112,8 @@ export default class App extends Component {
 
         return (
             <View style={styles.container}>
-                <Map position={this.state.position} />     
+                <Map position={this.state.coords} routeCoords={this.state.routeCoords} />     
                 <View style={styles.mapOverlayContainer}>
-                    <Text style={styles.instructions}>Time: {timeString}</Text>
                     <Text style={styles.instructions}>Lat: {lat}</Text>
                     <Text style={styles.instructions}>Lng: {lng}</Text>
                 </View>                           
@@ -113,7 +140,7 @@ const styles = StyleSheet.create({
     },
     mapOverlayContainer: {
         position: 'absolute',
-        bottom: 100,
+        top: 0,
         left: 0,
         right: 0,
         backgroundColor: '#fff',

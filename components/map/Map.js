@@ -15,56 +15,38 @@ const ZOOM  = 11;
 export default class Map extends Component {
     constructor() {
         super();        
-        
-        const { coords } = this.this.props.position ? this.this.props.position : null;
 
         this.state = {
-            lat: coords.latitude ? coords.latitude : LATITUDE,
-            lng: coords.longitude ? coords.longitude : LONGITUDE,
-            zoom: ZOOM,
-            positionArray: null,
-        };  
+            coords: [LONGITUDE, LATITUDE],
+            zoom: ZOOM,            
+        };
         
         this.GeoJSON = new GeoJSON();
     }
 
-    updatePositionArray = (coords) => {
-        let array = this.state.positionArray;
+    updateCoords = async () => {
+        const { coords } = this.props;
 
-        if (array) {
-            const lastIndex = array.length - 1;
-
-            if (array[lastIndex] !== coords) array.push(coords);
-    
-            this.setState({ positionArray: array });
-        }        
+        await this.setState({ coords });
     }
 
-    updateCoords = () => {
-        const { position } = this.props;
+    renderLine() {
+        const coords = this.props.routeCoords;
 
-        this.setState({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-        });
+        if (coords.length < 2) {
+            return null;
+        }
 
-        const coords = [position.coords.latitude, position.coords.longitude];
-        this.updatePositionArray(coords);
+        const coordsJSON = this.GeoJSON.line(this.props.routeCoords, 'newRoute');
+
+        return(
+            <Mapbox.Animated.ShapeSource id='routeLine' shape={coordsJSON}>
+                <Mapbox.Animated.LineLayer id='line1' style={{lineColor: '#314ccd', lineWidth: 3,}} />
+            </Mapbox.Animated.ShapeSource>
+        )
     }
 
-    renderLine = () => {        
-        const coords = this.state.positionArray;
-
-        if (coords) {
-            const json = this.GeoJSON.line(coords, 'test_line');
-
-            console.log('asdasd', json);
-        } else {
-            console.log('asdasd no json no');
-        }        
-    }
-
-    renderAnnotations () {
+    renderAnnotations() {
         return (
             <Mapbox.PointAnnotation
                 key='pointAnnotation'
@@ -79,21 +61,17 @@ export default class Map extends Component {
         )
     }
 
-    componentDidUpdate() {        
-        this.updateCoords();
-        this.renderLine();
-    }
-
     render() {
         return(
             <View style={styles.container}>
                 <Mapbox.MapView
                     styleURL={Mapbox.StyleURL.Dark}
                     zoomLevel={this.state.zoom}
-                    centerCoordinate={[this.state.lng, this.state.lat]}
+                    centerCoordinate={this.state.coords}
                     style={styles.container}
                     showUserLocation={true}>
                     {this.renderAnnotations()}
+                    {this.renderLine()}
                 </Mapbox.MapView>
             </View>
         );
