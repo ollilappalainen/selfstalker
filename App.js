@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View, TouchableNativeFeedback } from 'react-native';
 import MapboxGL from '@mapbox/react-native-mapbox-gl';
 
 //Custom imports
@@ -18,6 +18,7 @@ export default class App extends Component {
             isFetchingAndroidPermission: IS_ANDROID,
             isAndroidPermissionGranted: false,
             routeCoords: [],
+            isRecording: false,
         };          
 
         this.GeoJSON = new GeoJSON();
@@ -64,13 +65,12 @@ export default class App extends Component {
     }
 
     componentDidMount() {
-        this.getPosition();
-        this.watchLocation();
+        this.getPosition();        
     }
 
-    componentWillUnmount() {
-        navigator.geolocation.clearWatch(this.state.watchId);
-    }
+    // componentWillUnmount() {
+    //     navigator.geolocation.clearWatch(this.state.watchId);
+    // }
 
     async componentWillMount() {
         if (IS_ANDROID) {
@@ -80,6 +80,35 @@ export default class App extends Component {
                 isFetchingAndroidPermission: false,
             });
         }        
+    }
+
+    onRecordButtonPress = async () => {
+        let isRecording;
+
+        if (this.state.isRecording) {
+            isRecording = false;
+            await this.setState({ isRecording });
+            navigator.geolocation.clearWatch(this.state.watchId);
+        } else {
+            isRecording = true;
+            await this.setState({ isRecording });
+            this.watchLocation();
+        }
+    }
+
+    renderRecordButton() {
+        const text = this.state.isRecording ? 'Stop Stalking' : 'Start Stalking';
+        const activeStyle = this.state.isRecording ? styles.recordButtonActive : styles.recordButtonInactive;
+
+        return(
+            <TouchableNativeFeedback
+                onPress={this.onRecordButtonPress}
+                background={TouchableNativeFeedback.SelectableBackground()}>
+                <View style={[styles.recordButton, activeStyle]}>
+                    <Text style={styles.recordButtonText}>{text.toUpperCase()}</Text>
+                </View>
+            </TouchableNativeFeedback>
+        )
     }
 
     render() {
@@ -116,6 +145,9 @@ export default class App extends Component {
                 <View style={styles.mapOverlayContainer}>
                     <Text style={styles.instructions}>Lat: {lat}</Text>
                     <Text style={styles.instructions}>Lng: {lng}</Text>
+                </View>
+                <View style={styles.buttonWrapper}>
+                    {this.renderRecordButton()}
                 </View>                           
             </View>
         );
@@ -144,5 +176,37 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         backgroundColor: '#fff',
+    },
+    buttonWrapper: {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'absolute',
+        bottom: 40,
+        left: 0,
+        right: 0
+    },
+    recordButton: {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingTop: 10,
+        paddingBottom: 10,
+        paddingLeft: 20,
+        paddingRight: 20,
+        borderRadius: 45,
+        borderWidth: 5,        
+    },
+    recordButtonInactive: {
+        borderColor: '#993955',
+        backgroundColor: '#E9ECF5',
+    },
+    recordButtonActive: {
+        backgroundColor: '#993955',
+        borderColor: '#1D201F',
+    },
+    recordButtonText: {
+        color: '#1D201F',
+        fontSize: 24,
     }
 });
