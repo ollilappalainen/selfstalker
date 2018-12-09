@@ -2,12 +2,14 @@ import React, { Component } from 'react';
 import { Platform, StyleSheet, Text, View, TouchableNativeFeedback } from 'react-native';
 import Mapbox from '@mapbox/react-native-mapbox-gl';
 import firebase from 'firebase';
+import SideMenu from 'react-native-side-menu';
+import { Icon } from 'react-native-elements'
 
 //Custom imports
 import Map from './components/map/Map';
-import RoutesMenu from './components/routes-menu/RoutesMenu';
 import GeoJSON from './components/geoJSON/GeoJSON';
 import { databaseConfig } from './components/utils/config';
+import Menu from './components/menu/Menu';
 
 const IS_ANDROID = Platform.OS === 'android';
 
@@ -29,6 +31,8 @@ export default class App extends Component {
             routes: null,
             routesCount: 0,
             selectedRoute: null,
+            isMenuOpen: false,
+            focusToUser: false,
         };          
 
         this.GeoJSON = new GeoJSON();
@@ -75,22 +79,29 @@ export default class App extends Component {
         });
     }
 
-    fetchAllRoutes = async () => {        
-        firebase.database().ref('Routes/').once('value', routes => {
-            this.setState({
-                routes: routes.val(),
-                routesCount: parseInt(routes.numChildren()),
+    fetchAllRoutes = async () => {       
+        const routes = [];
+
+        await firebase.database().ref('Routes/').once('value')
+            .then(snapshot => {
+                snapshot.forEach(child => {
+                    routes.push(child.val());
+                });
             });
+
+        this.setState({
+            routes: routes,
+            routesCount: routes.length,
         });
     }
 
     storeRouteData = async () => {
-        let { routesCount } = this.state;
-        const name = `SavedRoute${routesCount++}`;
+        const date = new Date();
+        let { routesCount } = this.state;        
+        const name = `SavedRoute${date.getTime()}`;
         const route = this.GeoJSON.line(this.state.routeCoords, name);
 
         await firebase.database().ref(`Routes/${name}`).set({ name, route });
-
         this.fetchAllRoutes();
     }
 
@@ -107,17 +118,32 @@ export default class App extends Component {
             }); 
         } else {
             isRecording = true;
-            await this.setState({ isRecording });
+            await this.setState({ 
+                isRecording: isRecording, 
+                routeCoords: [] });
+
             this.watchLocation();
         }
     }
 
-    handleRouteSelect = () => {
-        this.setState({ selectedRoute });
+    toggleMenu = () => {
+        this.setState({
+            isMenuOpen: this.state.isMenuOpen ? false : true,
+        });
     }
+
+    handleRouteSelect = async selectedRoute => {
+        await this.setState({ routeCoords: selectedRoute.route.geometry.coordinates });
+        this.toggleMenu();
+    }
+
+    updateMenuState = (isMenuOpen) => {
+        this.setState({ isMenuOpen });
+    }    
     
     componentDidMount() {
-        this.getPosition();        
+        this.getPosition(); 
+        this.fetchAllRoutes();       
     }
 
     async componentWillMount() {
@@ -131,11 +157,33 @@ export default class App extends Component {
         }        
     }
 
+    onFocusToUserButtonPress = async () => {
+        await this.setState({
+            focusToUser: !this.state.focusToUser,
+        });
+
+        await this.setState({
+            focusToUser: !this.state.focusToUser,
+        });
+    }
+
+    renderFocusToUserButton() {                
+        return (
+            <TouchableNativeFeedback
+                onPress={this.onFocusToUserButtonPress}
+                background={TouchableNativeFeedback.SelectableBackground()}>
+                <View style={styles.focusToUserButton}>
+                    <Icon name='location-on' color='#1D201F' size={30} />
+                </View>
+            </TouchableNativeFeedback>
+        )
+    }
+
     renderRecordButton() {
         const text = this.state.isRecording ? 'Stop Stalking' : 'Start Stalking';
         const activeStyle = this.state.isRecording ? styles.recordButtonActive : styles.recordButtonInactive;
 
-        return(
+        return (
             <TouchableNativeFeedback
                 onPress={this.onRecordButtonPress}
                 background={TouchableNativeFeedback.SelectableBackground()}>
@@ -146,8 +194,20 @@ export default class App extends Component {
         )
     }
 
-    renderCenterToPositionButton() {
+    renderMenuToggle() {      
+        const text = 'Menu';
+        const icon = this.state.isMenuOpen ? 'chevron-left' : 'chevron-right';
 
+        return (
+            <TouchableNativeFeedback
+                onPress={this.toggleMenu}
+                background={TouchableNativeFeedback.SelectableBackground()}>
+
+                <View style={styles.toggleMenuButton}>
+                    <Icon name={icon} color='#E9ECF5' size={40} />
+                </View>
+            </TouchableNativeFeedback>
+        )
     }
 
     render() {
@@ -165,17 +225,25 @@ export default class App extends Component {
             );
         }
 
-        return (
-            <View style={styles.container}>
-                <Map routeCoords={this.state.routeCoords} />  
-                <View>
+        const menu = <Menu routes={this.state.routes} onRouteSelect={this.handleRouteSelect} />
 
-                </View>                   
-                <View style={styles.buttonWrapper}>
-                    {this.renderRecordButton()}
-                </View>                           
-                <RoutesMenu routes={this.state.routes} onRouteSelect={this.handleRouteSelect} />
-            </View>
+        return (         
+            <SideMenu 
+            menu={menu}
+            isOpen={this.state.isMenuOpen}
+            onChange={isOpen => this.updateMenuState(isOpen)}>
+                <View style={styles.container}>
+                    <Map routeCoords={this.state.routeCoords} isRecording={this.state.isRecording} focusToUser={this.state.focusToUser} />  
+                    <View>
+
+                    </View>                   
+                    <View style={styles.buttonWrapper}>
+                        {this.renderRecordButton()}
+                    </View>
+                    {this.renderMenuToggle()}
+                    {this.renderFocusToUserButton()}
+                </View>
+            </SideMenu>               
         );
     }
 }
@@ -217,5 +285,33 @@ const styles = StyleSheet.create({
     recordButtonText: {
         color: '#1D201F',
         fontSize: 24,
+    },
+    toggleMenuButton: {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'flex-end',
+        backgroundColor: '#993955',
+        position: 'absolute',
+        borderRadius: 90,
+        borderWidth: 3,
+        borderColor: '#1D201F',
+        width: 80,
+        height: 80,
+        top: 20,
+        left: -40,
+    },
+    focusToUserButton: {
+        borderRadius: 90,
+        width: 50,
+        height: 50,
+        position: 'absolute',
+        top: 20,
+        right: 10,
+        borderColor: '#993955',
+        borderWidth: 2,
+        backgroundColor: '#E9ECF5',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
     }
 });

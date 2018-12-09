@@ -19,14 +19,55 @@ export default class Map extends Component {
         this.state = {
             coords: [LONGITUDE, LATITUDE],
             zoom: ZOOM,  
-            centeredToPosition: false,          
+            centeredToPosition: false, 
+            showUserLocation: true, 
+            trackingMode: Mapbox.UserTrackingModes.Follow,
+            isRecording: false,   
         };
         
         this.GeoJSON = new GeoJSON();
     }
 
-    centerMapToPosition = async () => {
-        // Todo
+    centerMapToPosition = () => {
+        navigator.geolocation.getCurrentPosition(position => {
+            const coords = [position.coords.longitude, position.coords.latitude];
+
+            this.map.setCamera({
+                centerCoordinate: coords,
+            });
+        }, error => console.log('Error getting device position: ', error), {
+            timeout: 2000,
+            maximumAge: 2000,
+            enableHighAccuracy: true,
+        });
+    }
+
+    fitToLayer = async () => {
+        const coords = this.props.routeCoords;
+
+        this.map.fitBounds(coords[0], coords[coords.length - 1], [50, 150], 500);
+    }
+
+    componentDidMount() {
+        const isRecording = this.props.isRecording;
+
+        if (isRecording) {
+            this.setState({ 
+                isRecording: isRecording, 
+                trackingMode: Mapbox.UserTrackingModes.Follow,
+            });
+        } else {
+            this.setState({ 
+                isRecording: false, 
+                trackingMode: Mapbox.UserTrackingModes.None,
+            });
+        }
+    }
+
+    componentDidUpdate() {
+        if (this.props.focusToUser === true) {
+            this.centerMapToPosition();
+        }
     }
 
     renderLine() {
@@ -37,6 +78,8 @@ export default class Map extends Component {
         }
 
         const coordsJSON = this.GeoJSON.line(this.props.routeCoords, 'newRoute');
+        
+        if (!this.state.isRecording) this.fitToLayer();
 
         return(
             <Mapbox.Animated.ShapeSource id='routeLine' shape={coordsJSON}>
@@ -45,32 +88,18 @@ export default class Map extends Component {
         )
     }
 
-    renderAnnotations() {
-        return (
-            <Mapbox.PointAnnotation
-                key='pointAnnotation'
-                id='pointAnnotation'
-                coordinate={[11.254, 43.772]}>
-        
-                <View style={styles.annotationContainer}>
-                    <View style={styles.annotationFill} />
-                </View>
-                <Mapbox.Callout title='Look! An annotation!' />
-            </Mapbox.PointAnnotation>
-        )
-    }
-
     render() {
         return(
             <View style={styles.container}>
                 <Mapbox.MapView
+                    ref={(ref) => (this.map = ref)}
                     styleURL={Mapbox.StyleURL.Dark}
+                    onDidFinishRenderingMapFully={this.onRegionDidChange}
                     zoomLevel={this.state.zoom}
                     centerCoordinate={this.state.coords}
                     style={styles.container}
-                    showUserLocation={true}
-                    userTrackingMode={Mapbox.UserTrackingModes.Follow}>
-                    {this.renderAnnotations()}
+                    showUserLocation={this.state.showUserLocation}
+                    userTrackingMode={this.state.trackingMode}>
                     {this.renderLine()}
                 </Mapbox.MapView>
             </View>
@@ -81,22 +110,5 @@ export default class Map extends Component {
 const styles = StyleSheet.create({
     container: {
         ...StyleSheet.absoluteFillObject,
-    },
-    annotationContainer: {
-        width: 30,
-        height: 30,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'white',
-        borderRadius: 15,
-    },
-    annotationFill: {
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        backgroundColor: 'orange',
-        transform: [{
-            scale: 0.6
-        }],
     }
 });
